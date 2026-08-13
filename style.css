@@ -500,43 +500,44 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
 }
 
 .dpad-middle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
 }
 
 .dpad-center {
-  width: 50px;
-  height: 50px;
+  width: 65px;
+  height: 65px;
   background: rgba(255, 255, 255, 0.02);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .dpad-btn {
-  width: 55px;
-  height: 55px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 12px;
+  width: 70px;
+  height: 70px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(0, 242, 254, 0.3);
+  border-radius: 16px;
   color: #fff;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
   transition: all 0.15s ease;
   touch-action: manipulation;
 }
 
 .dpad-btn:active {
-  background: rgba(0, 242, 254, 0.3);
+  background: rgba(0, 242, 254, 0.35);
   border-color: var(--primary-cyan);
-  box-shadow: 0 0 15px rgba(0, 242, 254, 0.5);
-  transform: scale(0.94);
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.6);
+  transform: scale(0.92);
 }
 
 /* Responsive Scaling for smaller mobile devices */
@@ -577,13 +578,23 @@ body {
     font-size: 0.95rem;
   }
 
+  .dpad {
+    gap: 10px;
+  }
+
+  .dpad-middle {
+    gap: 10px;
+  }
+
   .dpad-btn {
-    width: 48px;
-    height: 48px;
+    width: 64px;
+    height: 64px;
+    font-size: 1.4rem;
+    border-radius: 14px;
   }
 
   .dpad-center {
-    width: 42px;
-    height: 42px;
+    width: 56px;
+    height: 56px;
   }
 }
