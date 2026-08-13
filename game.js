@@ -68,15 +68,15 @@
   // --- Campaign Level Configurations (10 Levels) ---
   const CAMPAIGN_LEVELS = [
     { level: 1, target: 100, obsCount: 0, name: 'OPEN ARENA' },
-    { level: 2, target: 250, obsCount: 4, name: 'CORNER HAZARDS' },
-    { level: 3, target: 450, obsCount: 8, name: 'CENTER BOX' },
-    { level: 4, target: 700, obsCount: 12, name: 'CORRIDOR ALLEY' },
-    { level: 5, target: 1000, obsCount: 16, name: 'OUTER RING' },
-    { level: 6, target: 1350, obsCount: 20, name: 'PLUS CROSS' },
-    { level: 7, target: 1750, obsCount: 24, name: 'DOUBLE MAZE' },
-    { level: 8, target: 2200, obsCount: 28, name: 'SPIRAL DANGER' },
-    { level: 9, target: 2700, obsCount: 32, name: 'CHAOS MATRIX' },
-    { level: 10, target: 3300, obsCount: 36, name: 'BOSS ARENA' }
+    { level: 2, target: 150, obsCount: 4, name: 'CORNER HAZARDS' },
+    { level: 3, target: 200, obsCount: 8, name: 'CENTER BOX' },
+    { level: 4, target: 250, obsCount: 12, name: 'CORRIDOR ALLEY' },
+    { level: 5, target: 300, obsCount: 16, name: 'OUTER RING' },
+    { level: 6, target: 350, obsCount: 20, name: 'PLUS CROSS' },
+    { level: 7, target: 400, obsCount: 24, name: 'DOUBLE MAZE' },
+    { level: 8, target: 450, obsCount: 28, name: 'SPIRAL DANGER' },
+    { level: 9, target: 500, obsCount: 32, name: 'CHAOS MATRIX' },
+    { level: 10, target: 600, obsCount: 36, name: 'BOSS ARENA' }
   ];
 
   // --- Game Grid Configuration ---
@@ -457,7 +457,7 @@
   }
 
   // --- Game Engine Functions ---
-  function resetGame() {
+  function resetLevelState(levelIdx) {
     const center = Math.floor(GRID_COUNT / 2);
     snake = [
       { x: center, y: center },
@@ -467,23 +467,32 @@
     direction = { x: 1, y: 0 };
     nextDirection = { x: 1, y: 0 };
 
-    score = 0;
-    foodEaten = 0;
-    currentCombo = 1;
-    maxCombo = 1;
+    score = 0; // Reset score for new level / retry
     particles = [];
     fireworks = [];
     bonusFood.active = false;
 
     if (gameMode === 'campaign') {
-      currentLevelIndex = 0;
-      generateLevelObstacles(0);
+      generateLevelObstacles(levelIdx);
     } else {
       generateLevelObstacles(-1);
     }
 
     updateScoreDisplay();
     spawnFood();
+  }
+
+  function resetGame() {
+    foodEaten = 0;
+    currentCombo = 1;
+    maxCombo = 1;
+
+    if (gameMode === 'campaign') {
+      currentLevelIndex = 0;
+      resetLevelState(0);
+    } else {
+      resetLevelState(-1);
+    }
 
     highScoreEl.textContent = String(highScore).padStart(4, '0');
   }
@@ -636,7 +645,6 @@
       const currentTarget = CAMPAIGN_LEVELS[currentLevelIndex].target;
       if (score >= currentTarget) {
         if (currentLevelIndex < CAMPAIGN_LEVELS.length - 1) {
-          currentLevelIndex++;
           triggerLevelUp();
         } else {
           triggerVictory();
@@ -646,21 +654,24 @@
   }
 
   function triggerLevelUp() {
+    gameState = 'LEVEL_TRANSITION'; // Pause step movement during banner display!
+    updateTouchControlsVisibility(); // Hide D-pad during banner display
     playLevelUpSound();
-    const nextLevelObj = CAMPAIGN_LEVELS[currentLevelIndex];
+
+    const nextLevelObj = CAMPAIGN_LEVELS[currentLevelIndex + 1];
 
     levelUpTextEl.textContent = `LEVEL ${nextLevelObj.level}`;
     levelUpTargetTextEl.textContent = `TARGET: ${nextLevelObj.target} PTS (${nextLevelObj.name})`;
 
     levelUpOverlay.classList.remove('hidden');
 
-    generateLevelObstacles(currentLevelIndex);
-    spawnFood();
-    updateScoreDisplay();
-
     setTimeout(() => {
       levelUpOverlay.classList.add('hidden');
-    }, 1800);
+      currentLevelIndex++;
+      resetLevelState(currentLevelIndex);
+      gameState = 'PLAYING';
+      updateTouchControlsVisibility();
+    }, 1500);
   }
 
   function triggerVictory() {
@@ -1057,7 +1068,12 @@
 
   playAgainBtn.addEventListener('click', () => {
     playButtonClick();
-    startGame();
+    gameOverOverlay.classList.remove('active');
+    gameOverOverlay.classList.add('hidden');
+    resetLevelState(currentLevelIndex);
+    gameState = 'PLAYING';
+    startTime = Date.now();
+    updateTouchControlsVisibility();
   });
 
   mainMenuBtn.addEventListener('click', () => {
