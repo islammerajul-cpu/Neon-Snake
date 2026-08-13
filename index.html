@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEON SNAKE // Cyberpunk Arcade Game</title>
+  <meta name="description" content="A modern, high-aesthetic neon cyberpunk Snake Game featuring dynamic glowing graphics, Web Audio synthesized sounds, particle effects, and touch support." />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="background-glow"></div>
+  
+  <div class="app-container">
+    <!-- Top Header HUD -->
+    <header class="hud-header">
+      <div class="brand">
+        <span class="neon-icon">🐍</span>
+        <h1 class="brand-title">NEON<span class="accent-text">SNAKE</span></h1>
+      </div>
+
+      <div class="score-board">
+        <div class="score-box">
+          <span class="score-label">SCORE</span>
+          <span id="currentScore" class="score-value">0000</span>
+        </div>
+        <div class="score-box">
+          <span class="score-label">HIGH SCORE</span>
+          <span id="highScore" class="score-value">0000</span>
+        </div>
+        <div class="score-box combo-box" id="comboBox" style="display: none;">
+          <span class="score-label">COMBO</span>
+          <span id="comboValue" class="score-value combo-text">x1</span>
+        </div>
+      </div>
+
+      <div class="hud-controls">
+        <button id="soundToggleBtn" class="icon-btn" title="Toggle Sound (M)" aria-label="Toggle Sound">
+          <span id="soundIcon">🔊</span>
+        </button>
+        <button id="pauseBtn" class="icon-btn" title="Pause Game (Space)" aria-label="Pause Game">
+          <span>⏸️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main class="game-wrapper">
+      <div class="canvas-card">
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+
+        <!-- START OVERLAY -->
+        <div id="startOverlay" class="overlay active">
+          <div class="overlay-card">
+            <div class="overlay-badge">CYBERPUNK ARCADE</div>
+            <h2 class="overlay-title">READY TO PLAY?</h2>
+            <p class="overlay-subtitle">Guide the neon snake, collect glowing energy spheres & unlock bonus multipliers!</p>
+
+            <div class="settings-group">
+              <label class="setting-label">DIFFICULTY LEVEL (SPEED)</label>
+              <div class="difficulty-selector">
+                <button class="diff-btn" data-speed="260">EASY</button>
+                <button class="diff-btn active" data-speed="180">MEDIUM</button>
+                <button class="diff-btn" data-speed="130">HARD</button>
+                <button class="diff-btn insane-btn" data-speed="90">INSANE⚡</button>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <label class="setting-label">OBSTACLES (HAZARDS)</label>
+              <div class="obstacle-selector">
+                <button class="obs-btn active" data-obs="off">NONE</button>
+                <button class="obs-btn" data-obs="few">FEW (4)</button>
+                <button class="obs-btn" data-obs="many">MANY (8)</button>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <label class="setting-label">BORDER WALLS</label>
+              <div class="mode-selector">
+                <button class="mode-btn active" data-mode="portal">WRAP AROUND (PASSTHROUGH)</button>
+                <button class="mode-btn" data-mode="classic">SOLID WALLS (DEATH)</button>
+              </div>
+            </div>
+
+            <button id="startBtn" class="primary-btn glow-btn">
+              START GAME <span class="btn-arrow">▶</span>
+            </button>
+
+            <div class="controls-hint">
+              <span>⌨️ Controls: <strong>WASD</strong> or <strong>Arrow Keys</strong> | <strong>Space</strong> Pause</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAUSE OVERLAY -->
+        <div id="pauseOverlay" class="overlay hidden">
+          <div class="overlay-card compact-card">
+            <h2 class="overlay-title neon-text">PAUSED</h2>
+            <p class="overlay-subtitle">Take a breather, agent.</p>
+            <div class="overlay-actions">
+              <button id="resumeBtn" class="primary-btn glow-btn">RESUME GAME</button>
+              <button id="restartBtnPause" class="secondary-btn">RESTART</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- GAME OVER OVERLAY -->
+        <div id="gameOverOverlay" class="overlay hidden">
+          <div class="overlay-card">
+            <div id="newHighBadge" class="new-record-badge hidden">🏆 NEW HIGH SCORE!</div>
+            <h2 class="overlay-title danger-text">GAME OVER</h2>
+            
+            <div class="final-stats">
+              <div class="stat-item">
+                <span class="stat-name">FINAL SCORE</span>
+                <span id="finalScore" class="stat-val">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-name">FOOD EATEN</span>
+                <span id="finalFood" class="stat-val">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-name">MAX COMBO</span>
+                <span id="finalCombo" class="stat-val">x1</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-name">TIME SURVIVED</span>
+                <span id="finalTime" class="stat-val">0s</span>
+              </div>
+            </div>
+
+            <div class="overlay-actions">
+              <button id="playAgainBtn" class="primary-btn glow-btn">
+                PLAY AGAIN <span class="btn-arrow">↺</span>
+              </button>
+              <button id="mainMenuBtn" class="secondary-btn">MAIN MENU</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Touch / On-Screen Controls for Mobile / Tablets -->
+    <div class="touch-controls">
+      <div class="dpad">
+        <button id="btnUp" class="dpad-btn up" aria-label="Up">▲</button>
+        <div class="dpad-middle">
+          <button id="btnLeft" class="dpad-btn left" aria-label="Left">◀</button>
+          <div class="dpad-center"></div>
+          <button id="btnRight" class="dpad-btn right" aria-label="Right">▶</button>
+        </div>
+        <button id="btnDown" class="dpad-btn down" aria-label="Down">▼</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="game.js"></script>
+</body>
+</html>
