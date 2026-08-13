@@ -472,6 +472,13 @@
     fireworks = [];
     bonusFood.active = false;
 
+    // Ensure all overlays are hidden
+    levelUpOverlay.classList.add('hidden');
+    gameOverOverlay.classList.remove('active');
+    gameOverOverlay.classList.add('hidden');
+    victoryOverlay.classList.remove('active');
+    victoryOverlay.classList.add('hidden');
+
     if (gameMode === 'campaign') {
       generateLevelObstacles(levelIdx);
     } else {

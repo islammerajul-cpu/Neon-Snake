@@ -387,6 +387,14 @@ body {
   box-shadow: 0 0 35px rgba(0, 242, 254, 0.8);
   animation: levelUpPop 0.4s ease-out;
   pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.level-up-banner.hidden {
+  display: none !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @keyframes levelUpPop {
