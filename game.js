@@ -1,5 +1,5 @@
 /* ==========================================================================
-   NEON SNAKE - GAME ENGINE & AUDIO SYNTHESIZER
+   NEON SNAKE - CLASSIC CYBERPUNK ARCADE ENGINE
    ========================================================================== */
 
 (function () {
@@ -25,44 +25,24 @@
   // --- HUD Elements ---
   const currentScoreEl = document.getElementById('currentScore');
   const highScoreEl = document.getElementById('highScore');
-  const levelDisplayEl = document.getElementById('levelDisplay');
   const comboBoxEl = document.getElementById('comboBox');
   const comboValueEl = document.getElementById('comboValue');
   const soundToggleBtn = document.getElementById('soundToggleBtn');
   const soundIconEl = document.getElementById('soundIcon');
   const pauseBtn = document.getElementById('pauseBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
 
   // --- Overlays & Modals ---
   const startOverlay = document.getElementById('startOverlay');
   const pauseOverlay = document.getElementById('pauseOverlay');
   const gameOverOverlay = document.getElementById('gameOverOverlay');
-  const levelUpOverlay = document.getElementById('levelUpOverlay');
-  const levelUpTextEl = document.getElementById('levelUpText');
-  const levelUpTargetTextEl = document.getElementById('levelUpTargetText');
-
-  const victoryOverlay = document.getElementById('victoryOverlay');
-  const victoryScoreEl = document.getElementById('victoryScore');
-  const victoryFoodEl = document.getElementById('victoryFood');
-  const victoryComboEl = document.getElementById('victoryCombo');
-  const victoryTimeEl = document.getElementById('victoryTime');
-  const victoryPlayAgainBtn = document.getElementById('victoryPlayAgainBtn');
-  const victoryMainMenuBtn = document.getElementById('victoryMainMenuBtn');
 
   const startBtn = document.getElementById('startBtn');
   const resumeBtn = document.getElementById('resumeBtn');
   const restartBtnPause = document.getElementById('restartBtnPause');
   const playAgainBtn = document.getElementById('playAgainBtn');
-  const mainMenuBtn = document.getElementById('mainMenuBtn');
 
   const touchControlsEl = document.querySelector('.touch-controls');
-
-  function updateTouchControlsVisibility() {
-    if (gameState === 'PLAYING') {
-      touchControlsEl.classList.add('active');
-    } else {
-      touchControlsEl.classList.remove('active');
-    }
-  }
 
   // --- Stat Displays ---
   const finalScoreEl = document.getElementById('finalScore');
@@ -75,36 +55,17 @@
   const diffBtns = document.querySelectorAll('.diff-btn');
   const modeBtns = document.querySelectorAll('.mode-btn');
   const obsBtns = document.querySelectorAll('.obs-btn');
-  const gmodeBtns = document.querySelectorAll('.gmode-btn');
-  const endlessOnlyGroups = document.querySelectorAll('.endless-only');
-
-  // --- Campaign Level Configurations (10 Levels) ---
-  const CAMPAIGN_LEVELS = [
-    { level: 1, target: 100, obsCount: 0, name: 'OPEN ARENA' },
-    { level: 2, target: 150, obsCount: 4, name: 'CORNER HAZARDS' },
-    { level: 3, target: 200, obsCount: 8, name: 'CENTER BOX' },
-    { level: 4, target: 250, obsCount: 12, name: 'CORRIDOR ALLEY' },
-    { level: 5, target: 300, obsCount: 16, name: 'OUTER RING' },
-    { level: 6, target: 350, obsCount: 20, name: 'PLUS CROSS' },
-    { level: 7, target: 400, obsCount: 24, name: 'DOUBLE MAZE' },
-    { level: 8, target: 450, obsCount: 28, name: 'SPIRAL DANGER' },
-    { level: 9, target: 500, obsCount: 32, name: 'CHAOS MATRIX' },
-    { level: 10, target: 600, obsCount: 36, name: 'BOSS ARENA' }
-  ];
 
   // --- Game Grid Configuration ---
   const GRID_COUNT = 24; // 24x24 grid
   const CELL_SIZE = canvas.width / GRID_COUNT; // 25px per cell
 
   // --- Game State Variables ---
-  let gameState = 'START'; // 'START', 'PLAYING', 'PAUSED', 'GAMEOVER', 'VICTORY'
-  let gameMode = 'campaign'; // 'campaign' or 'endless'
-  let currentLevelIndex = 0;
-  let speedInterval = 180; // Ms per tick (Medium default, halved speed)
-  let wallMode = 'portal'; // 'portal' (wrap around) default as requested
-  let obstacleCount = 0; // 0 for NONE, 4 for FEW, 8 for MANY
+  let gameState = 'PLAYING'; // 'PLAYING', 'PAUSED', 'GAMEOVER'
+  let speedInterval = 180; // Ms per tick (Medium default)
+  let wallMode = 'portal'; // 'portal' (wrap around) default
+  let obstacleCount = 0; // 0 for OFF, 4 for FEW, 8 for MANY
   let obstacles = [];
-  let fireworks = [];
   let soundEnabled = localStorage.getItem('neon_snake_sound') !== 'false';
 
   let snake = [];
@@ -121,10 +82,10 @@
   let currentCombo = 1;
   let comboTimer = null;
   let maxCombo = 1;
-  let startTime = 0;
+  let startTime = Date.now();
   let timeSurvived = 0;
 
-  let lastTickTime = 0;
+  let gameTickInterval = null;
   let animationFrameId = null;
 
   // --- Web Audio API Synthesizer ---
@@ -224,25 +185,6 @@
     playTone(400, 'sine', 0.04, 0.05, 0.001);
   }
 
-  function playLevelUpSound() {
-    if (!soundEnabled || !audioCtx) return;
-    initAudio();
-    playTone(440, 'triangle', 0.1, 0.15, 0.01);
-    setTimeout(() => playTone(659.25, 'triangle', 0.1, 0.15, 0.01), 70);
-    setTimeout(() => playTone(880, 'triangle', 0.22, 0.2, 0.01), 140);
-  }
-
-  function playVictorySound() {
-    if (!soundEnabled || !audioCtx) return;
-    initAudio();
-    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
-    notes.forEach((freq, idx) => {
-      setTimeout(() => {
-        playTone(freq, 'sine', 0.25, 0.2, 0.01);
-      }, idx * 90);
-    });
-  }
-
   // --- Sound HUD Updates ---
   function updateSoundIcon() {
     soundIconEl.textContent = soundEnabled ? '🔊' : '🔇';
@@ -258,21 +200,12 @@
   });
 
   // --- Settings Selectors ---
-  gmodeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      gmodeBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      gameMode = btn.dataset.gmode;
-      endlessOnlyGroups.forEach(el => el.classList.toggle('hidden', gameMode !== 'endless'));
-      playButtonClick();
-    });
-  });
-
   diffBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       diffBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       speedInterval = parseInt(btn.dataset.speed, 10);
+      startGameTimer();
       playButtonClick();
     });
   });
@@ -292,6 +225,7 @@
       btn.classList.add('active');
       const val = btn.dataset.obs;
       obstacleCount = val === 'few' ? 4 : (val === 'many' ? 8 : 0);
+      generateObstacles(obstacleCount);
       playButtonClick();
     });
   });
@@ -323,8 +257,6 @@
       const p = particles[i];
       p.x += p.vx;
       p.y += p.vy;
-      p.vx *= 0.95;
-      p.vy *= 0.95;
       p.life -= p.decay;
       p.alpha = Math.max(0, p.life);
 
@@ -334,143 +266,44 @@
     }
   }
 
-  // --- Fireworks Particle Engine ---
-  function spawnFireworks() {
-    const colors = ['#00f2fe', '#00ff87', '#ff007f', '#ffe600', '#a855f7', '#ffffff'];
-    for (let i = 0; i < 40; i++) {
-      const fx = Math.random() * canvas.width;
-      const fy = Math.random() * canvas.height * 0.6;
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      for (let j = 0; j < 10; j++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 5 + 2;
-        fireworks.push({
-          x: fx,
-          y: fy,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          color: color,
-          size: Math.random() * 4 + 2,
-          alpha: 1,
-          life: 1,
-          decay: Math.random() * 0.025 + 0.015
-        });
-      }
-    }
-  }
-
-  function updateFireworks() {
-    for (let i = fireworks.length - 1; i >= 0; i--) {
-      const p = fireworks[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.04;
-      p.life -= p.decay;
-      p.alpha = Math.max(0, p.life);
-      if (p.life <= 0) fireworks.splice(i, 1);
-    }
-  }
-
-  function drawFireworks() {
+  function drawParticles() {
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    fireworks.forEach(p => {
+    particles.forEach(p => {
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = p.color;
+
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.globalAlpha = p.alpha;
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = p.color;
       ctx.fill();
     });
     ctx.restore();
   }
 
-  // --- Campaign Level Obstacle Generator ---
-  function generateLevelObstacles(levelIdx) {
+  // --- Obstacle Generation ---
+  function generateObstacles(count) {
     obstacles = [];
+    if (count <= 0) return;
+
     const center = Math.floor(GRID_COUNT / 2);
+    let attempts = 0;
+    while (obstacles.length < count && attempts < 200) {
+      attempts++;
+      const rx = Math.floor(Math.random() * (GRID_COUNT - 4)) + 2;
+      const ry = Math.floor(Math.random() * (GRID_COUNT - 4)) + 2;
 
-    function addBlock(x, y) {
-      if (Math.abs(x - center) <= 2 && Math.abs(y - center) <= 2) return;
-      if (x < 0 || x >= GRID_COUNT || y < 0 || y >= GRID_COUNT) return;
-      if (!obstacles.some(o => o.x === x && o.y === y)) {
-        obstacles.push({ x, y });
-      }
-    }
+      // Keep center clear for snake spawn
+      if (Math.abs(rx - center) <= 2 && Math.abs(ry - center) <= 2) continue;
 
-    if (gameMode !== 'campaign') {
-      if (obstacleCount > 0) {
-        let placed = 0;
-        let attempts = 0;
-        while (placed < obstacleCount && attempts < 250) {
-          attempts++;
-          const ox = Math.floor(Math.random() * GRID_COUNT);
-          const oy = Math.floor(Math.random() * GRID_COUNT);
-          if (Math.abs(ox - center) <= 2 && Math.abs(oy - center) <= 2) continue;
-          if (obstacles.some(o => o.x === ox && o.y === oy)) continue;
-          obstacles.push({ x: ox, y: oy });
-          placed++;
-        }
-      }
-      return;
-    }
-
-    const lvl = levelIdx + 1;
-    if (lvl === 1) {
-      // 0 obstacles
-    } else if (lvl === 2) {
-      addBlock(4, 4); addBlock(19, 4);
-      addBlock(4, 19); addBlock(19, 19);
-    } else if (lvl === 3) {
-      addBlock(7, 7); addBlock(16, 7);
-      addBlock(7, 16); addBlock(16, 16);
-      addBlock(7, 11); addBlock(16, 11);
-      addBlock(11, 7); addBlock(11, 16);
-    } else if (lvl === 4) {
-      for (let i = 4; i <= 9; i++) addBlock(i, 6);
-      for (let i = 14; i <= 19; i++) addBlock(i, 17);
-    } else if (lvl === 5) {
-      for (let i = 3; i <= 20; i += 5) {
-        addBlock(i, 3); addBlock(i, 20);
-        addBlock(3, i); addBlock(20, i);
-      }
-    } else if (lvl === 6) {
-      for (let i = 4; i <= 8; i++) {
-        addBlock(i, 11); addBlock(23 - i, 11);
-        addBlock(11, i); addBlock(11, 23 - i);
-      }
-    } else if (lvl === 7) {
-      for (let i = 5; i <= 10; i++) {
-        addBlock(i, 5); addBlock(23 - i, 18);
-      }
-      for (let i = 13; i <= 18; i++) {
-        addBlock(5, i); addBlock(18, 23 - i);
-      }
-    } else if (lvl === 8) {
-      for (let i = 4; i <= 19; i += 3) {
-        addBlock(i, 4); addBlock(i, 19);
-        addBlock(4, i); addBlock(19, i);
-      }
-    } else if (lvl === 9) {
-      for (let x = 4; x <= 19; x += 5) {
-        for (let y = 4; y <= 19; y += 5) {
-          addBlock(x, y); addBlock(x + 1, y);
-        }
-      }
-    } else if (lvl === 10) {
-      for (let i = 3; i <= 20; i += 3) {
-        addBlock(i, 3); addBlock(i, 20);
-        addBlock(3, i); addBlock(20, i);
-      }
-      for (let i = 6; i <= 17; i += 3) {
-        addBlock(i, 6); addBlock(i, 17);
+      if (!obstacles.some(o => o.x === rx && o.y === ry)) {
+        obstacles.push({ x: rx, y: ry });
       }
     }
   }
 
   // --- Game Engine Functions ---
-  function resetLevelState(levelIdx) {
+  function resetGame() {
     const center = Math.floor(GRID_COUNT / 2);
     snake = [
       { x: center, y: center },
@@ -480,39 +313,17 @@
     direction = { x: 1, y: 0 };
     nextDirection = { x: 1, y: 0 };
 
-    score = 0; // Reset score for new level / retry
-    particles = [];
-    fireworks = [];
-    bonusFood.active = false;
-
-    // Ensure all overlays are hidden
-    levelUpOverlay.classList.add('hidden');
-    gameOverOverlay.classList.remove('active');
-    gameOverOverlay.classList.add('hidden');
-    victoryOverlay.classList.remove('active');
-    victoryOverlay.classList.add('hidden');
-
-    if (gameMode === 'campaign') {
-      generateLevelObstacles(levelIdx);
-    } else {
-      generateLevelObstacles(-1);
-    }
-
-    updateScoreDisplay();
-    spawnFood();
-  }
-
-  function resetGame() {
+    score = 0;
     foodEaten = 0;
     currentCombo = 1;
     maxCombo = 1;
+    particles = [];
+    bonusFood.active = false;
+    startTime = Date.now();
 
-    if (gameMode === 'campaign') {
-      currentLevelIndex = 0;
-      resetLevelState(0);
-    } else {
-      resetLevelState(-1);
-    }
+    generateObstacles(obstacleCount);
+    updateScoreDisplay();
+    spawnFood();
 
     highScoreEl.textContent = String(highScore).padStart(4, '0');
   }
@@ -555,13 +366,6 @@
 
   function updateScoreDisplay() {
     currentScoreEl.textContent = String(score).padStart(4, '0');
-
-    if (gameMode === 'campaign') {
-      const currentLevelObj = CAMPAIGN_LEVELS[currentLevelIndex];
-      levelDisplayEl.textContent = `${currentLevelObj.level}/10`;
-    } else {
-      levelDisplayEl.textContent = 'INF';
-    }
 
     if (score > highScore) {
       highScore = score;
@@ -635,12 +439,10 @@
 
       spawnFood();
 
-      // Chance to spawn bonus star every 4 food items
       if (foodEaten % 4 === 0 && !bonusFood.active) {
         spawnBonusFood();
       }
     } else if (bonusFood.active && head.x === bonusFood.x && head.y === bonusFood.y) {
-      // Bonus food collision
       score += bonusFood.scoreVal * currentCombo;
       updateScoreDisplay();
       handleCombo();
@@ -648,81 +450,26 @@
       playBonusSound();
       bonusFood.active = false;
     } else {
-      // Normal step - remove tail
       snake.pop();
     }
 
-    // Update bonus timer
     if (bonusFood.active) {
       bonusFood.timer--;
       if (bonusFood.timer <= 0) {
         bonusFood.active = false;
       }
     }
-
-    // Check Campaign Level Progression
-    if (gameMode === 'campaign' && gameState === 'PLAYING') {
-      const currentTarget = CAMPAIGN_LEVELS[currentLevelIndex].target;
-      if (score >= currentTarget) {
-        if (currentLevelIndex < CAMPAIGN_LEVELS.length - 1) {
-          triggerLevelUp();
-        } else {
-          triggerVictory();
-        }
-      }
-    }
-  }
-
-  function triggerLevelUp() {
-    gameState = 'LEVEL_TRANSITION'; // Pause step movement during banner display!
-    updateTouchControlsVisibility(); // Hide D-pad during banner display
-    playLevelUpSound();
-
-    const nextLevelObj = CAMPAIGN_LEVELS[currentLevelIndex + 1];
-
-    levelUpTextEl.textContent = `LEVEL ${nextLevelObj.level}`;
-    levelUpTargetTextEl.textContent = `TARGET: ${nextLevelObj.target} PTS (${nextLevelObj.name})`;
-
-    levelUpOverlay.classList.remove('hidden');
-
-    setTimeout(() => {
-      levelUpOverlay.classList.add('hidden');
-      currentLevelIndex++;
-      resetLevelState(currentLevelIndex);
-      gameState = 'PLAYING';
-      updateTouchControlsVisibility();
-    }, 1500);
-  }
-
-  function triggerVictory() {
-    gameState = 'VICTORY';
-    updateTouchControlsVisibility();
-    playVictorySound();
-    spawnFireworks();
-
-    timeSurvived = Math.floor((Date.now() - startTime) / 1000);
-
-    victoryScoreEl.textContent = score;
-    victoryFoodEl.textContent = foodEaten;
-    victoryComboEl.textContent = `x${maxCombo}`;
-    victoryTimeEl.textContent = `${timeSurvived}s`;
-
-    setTimeout(() => {
-      victoryOverlay.classList.remove('hidden');
-      victoryOverlay.classList.add('active');
-    }, 600);
   }
 
   function triggerGameOver() {
     gameState = 'GAMEOVER';
-    updateTouchControlsVisibility();
     playGameOverSound();
     createExplosion(snake[0].x, snake[0].y, '#ff3366', 35);
 
     timeSurvived = Math.floor((Date.now() - startTime) / 1000);
 
-    const isNewHigh = score > 0 && score >= highScore;
-    newHighBadge.classList.toggle('hidden', !isNewHigh);
+    const isNewRecord = score > 0 && score >= highScore;
+    newHighBadge.classList.toggle('hidden', !isNewRecord);
 
     finalScoreEl.textContent = score;
     finalFoodEl.textContent = foodEaten;
@@ -735,28 +482,28 @@
     }, 400);
   }
 
-  // --- Rendering Graphics ---
+  // --- Rendering Pipeline ---
   function render() {
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw background grid lines
+    // Draw Grid Lines (Subtle Cyberpunk Grid)
     ctx.strokeStyle = 'rgba(0, 242, 254, 0.04)';
     ctx.lineWidth = 1;
     for (let i = 0; i <= GRID_COUNT; i++) {
+      const pos = i * CELL_SIZE;
       ctx.beginPath();
-      ctx.moveTo(i * CELL_SIZE, 0);
-      ctx.lineTo(i * CELL_SIZE, canvas.height);
+      ctx.moveTo(pos, 0);
+      ctx.lineTo(pos, canvas.height);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(0, i * CELL_SIZE);
-      ctx.lineTo(canvas.width, i * CELL_SIZE);
+      ctx.moveTo(0, pos);
+      ctx.lineTo(canvas.width, pos);
       ctx.stroke();
     }
 
     // Draw Obstacles (Glowing Red Hazard Blocks)
-    if (obstacles.length > 0 && gameState !== 'START') {
+    if (obstacles.length > 0) {
       ctx.save();
       ctx.shadowBlur = 14;
       ctx.shadowColor = '#ff3366';
@@ -765,17 +512,14 @@
         const ox = obs.x * CELL_SIZE;
         const oy = obs.y * CELL_SIZE;
 
-        // Block background
         ctx.fillStyle = 'rgba(255, 51, 102, 0.3)';
         ctx.strokeStyle = '#ff3366';
         ctx.lineWidth = 1.5;
 
-        ctx.beginPath();
         drawRoundRect(ctx, ox + 2, oy + 2, CELL_SIZE - 4, CELL_SIZE - 4, 4);
         ctx.fill();
         ctx.stroke();
 
-        // X hazard lines
         ctx.beginPath();
         ctx.moveTo(ox + 6, oy + 6);
         ctx.lineTo(ox + CELL_SIZE - 6, oy + CELL_SIZE - 6);
@@ -787,27 +531,24 @@
     }
 
     // Draw Regular Food (Glowing Pink Orb)
-    if (gameState !== 'START') {
-      const fx = food.x * CELL_SIZE + CELL_SIZE / 2;
-      const fy = food.y * CELL_SIZE + CELL_SIZE / 2;
-      const pulse = Math.sin(Date.now() * 0.008) * 2;
+    const fx = food.x * CELL_SIZE + CELL_SIZE / 2;
+    const fy = food.y * CELL_SIZE + CELL_SIZE / 2;
+    const pulse = Math.sin(Date.now() * 0.008) * 2;
 
-      ctx.save();
-      ctx.shadowBlur = 18;
-      ctx.shadowColor = '#ff007f';
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#ff007f';
 
-      ctx.beginPath();
-      ctx.arc(fx, fy, (CELL_SIZE / 2 - 3) + pulse, 0, Math.PI * 2);
-      ctx.fillStyle = '#ff007f';
-      ctx.fill();
+    ctx.beginPath();
+    ctx.arc(fx, fy, (CELL_SIZE / 2 - 3) + pulse, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff007f';
+    ctx.fill();
 
-      // Inner core
-      ctx.beginPath();
-      ctx.arc(fx - 2, fy - 2, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      ctx.restore();
-    }
+    ctx.beginPath();
+    ctx.arc(fx - 2, fy - 2, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.restore();
 
     // Draw Bonus Food (Golden Star Orb with ring timer)
     if (bonusFood.active) {
@@ -818,7 +559,6 @@
       ctx.shadowBlur = 22;
       ctx.shadowColor = '#ffe600';
 
-      // Ring timer countdown
       const timerRatio = bonusFood.timer / bonusFood.maxTimer;
       ctx.beginPath();
       ctx.arc(bx, by, CELL_SIZE / 2 + 3, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * timerRatio);
@@ -826,13 +566,11 @@
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Center orb
       ctx.beginPath();
       ctx.arc(bx, by, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
       ctx.fillStyle = '#ffe600';
       ctx.fill();
 
-      // Inner white star highlight
       ctx.beginPath();
       ctx.arc(bx, by, 3, 0, Math.PI * 2);
       ctx.fillStyle = '#fff';
@@ -851,16 +589,13 @@
         const isHead = i === 0;
 
         if (isHead) {
-          // Snake Head
           ctx.shadowBlur = 20;
           ctx.shadowColor = '#00f2fe';
           ctx.fillStyle = '#00f2fe';
 
-          ctx.beginPath();
           drawRoundRect(ctx, sx + 1, sy + 1, CELL_SIZE - 2, CELL_SIZE - 2, 8);
           ctx.fill();
 
-          // Draw Eyes
           ctx.fillStyle = '#070a13';
           const eyeSize = 3.5;
           let eye1 = { x: 0, y: 0 };
@@ -886,19 +621,16 @@
           ctx.fill();
 
         } else {
-          // Body segment with gradient transition from Cyan to Magenta
           const ratio = i / snake.length;
           ctx.shadowBlur = 8;
           ctx.shadowColor = ratio > 0.6 ? 'rgba(255, 0, 127, 0.6)' : 'rgba(0, 242, 254, 0.6)';
 
-          // Dynamic segment color interpolation
           const r = Math.floor(0 + ratio * 255);
           const g = Math.floor(242 - ratio * 242);
           const b = Math.floor(254 - ratio * 127);
           ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
 
           const shrink = Math.min(i * 0.4, 4);
-          ctx.beginPath();
           drawRoundRect(
             ctx,
             sx + 1 + shrink / 2,
@@ -913,42 +645,56 @@
       ctx.restore();
     }
 
-    // Render Particle Explosions
     drawParticles();
-
-    if (gameState === 'VICTORY') {
-      if (Math.random() < 0.25) spawnFireworks();
-      updateFireworks();
-      drawFireworks();
-    }
   }
 
-  // --- Main Animation Loop ---
-  function gameLoop(timestamp) {
-    if (!lastTickTime) lastTickTime = timestamp;
-    const elapsed = timestamp - lastTickTime;
-
-    if (elapsed >= speedInterval) {
+  // --- Dedicated Game Movement Ticker & Render Loop ---
+  function startGameTimer() {
+    if (gameTickInterval) clearInterval(gameTickInterval);
+    gameTickInterval = setInterval(() => {
       if (gameState === 'PLAYING') {
         updateGameStep();
       }
-      lastTickTime = timestamp;
-    }
+    }, speedInterval);
+  }
 
+  function gameLoop() {
     updateParticles();
     render();
-
     animationFrameId = requestAnimationFrame(gameLoop);
   }
 
   // --- Input Handlers ---
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+      playButtonClick();
+      if (gameState === 'PLAYING') {
+        gameState = 'PAUSED';
+        startOverlay.classList.remove('hidden');
+        startOverlay.classList.add('active');
+      } else {
+        startOverlay.classList.remove('active');
+        startOverlay.classList.add('hidden');
+        gameState = 'PLAYING';
+      }
+    });
+  }
+
   function changeDirection(newDir) {
+    initAudio();
+
+    if (gameState === 'GAMEOVER') {
+      gameOverOverlay.classList.remove('active');
+      gameOverOverlay.classList.add('hidden');
+      resetGame();
+      gameState = 'PLAYING';
+      return;
+    }
+
     if (gameState !== 'PLAYING') return;
 
-    // Prevent 180-degree reverse turn
     if (newDir.x === -direction.x && newDir.y === -direction.y) return;
 
-    // Buffer turn
     if (newDir.x !== nextDirection.x || newDir.y !== nextDirection.y) {
       nextDirection = newDir;
       playTurnSound();
@@ -993,18 +739,38 @@
         break;
       case 'r':
       case 'R':
-        if (gameState === 'PLAYING' || gameState === 'PAUSED' || gameState === 'GAMEOVER' || gameState === 'VICTORY') {
-          startGame();
-        }
+        resetGame();
+        gameState = 'PLAYING';
         break;
     }
   });
 
-  // --- Touch D-Pad Controls ---
-  document.getElementById('btnUp').addEventListener('click', () => changeDirection({ x: 0, y: -1 }));
-  document.getElementById('btnDown').addEventListener('click', () => changeDirection({ x: 0, y: 1 }));
-  document.getElementById('btnLeft').addEventListener('click', () => changeDirection({ x: -1, y: 0 }));
-  document.getElementById('btnRight').addEventListener('click', () => changeDirection({ x: 1, y: 0 }));
+  // --- Touch D-Pad Controls (Instant Touch & Click) ---
+  const handleDpadInput = (dir) => {
+    initAudio();
+    changeDirection(dir);
+  };
+
+  const dpadMap = {
+    btnUp: { x: 0, y: -1 },
+    btnDown: { x: 0, y: 1 },
+    btnLeft: { x: -1, y: 0 },
+    btnRight: { x: 1, y: 0 }
+  };
+
+  Object.keys(dpadMap).forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleDpadInput(dpadMap[id]);
+      });
+      btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleDpadInput(dpadMap[id]);
+      }, { passive: false });
+    }
+  });
 
   // Touch Swipe Gesture on Canvas
   let touchStartX = 0;
@@ -1040,8 +806,6 @@
     initAudio();
     resetGame();
     gameState = 'PLAYING';
-    startTime = Date.now();
-    updateTouchControlsVisibility();
 
     startOverlay.classList.remove('active');
     startOverlay.classList.add('hidden');
@@ -1049,19 +813,15 @@
     pauseOverlay.classList.add('hidden');
     gameOverOverlay.classList.remove('active');
     gameOverOverlay.classList.add('hidden');
-    victoryOverlay.classList.remove('active');
-    victoryOverlay.classList.add('hidden');
   }
 
   function togglePause() {
     if (gameState === 'PLAYING') {
       gameState = 'PAUSED';
-      updateTouchControlsVisibility();
       pauseOverlay.classList.remove('hidden');
       pauseOverlay.classList.add('active');
     } else if (gameState === 'PAUSED') {
       gameState = 'PLAYING';
-      updateTouchControlsVisibility();
       pauseOverlay.classList.remove('active');
       pauseOverlay.classList.add('hidden');
     }
@@ -1069,7 +829,9 @@
 
   startBtn.addEventListener('click', () => {
     playButtonClick();
-    startGame();
+    startOverlay.classList.remove('active');
+    startOverlay.classList.add('hidden');
+    gameState = 'PLAYING';
   });
 
   pauseBtn.addEventListener('click', () => {
@@ -1091,42 +853,14 @@
     playButtonClick();
     gameOverOverlay.classList.remove('active');
     gameOverOverlay.classList.add('hidden');
-    resetLevelState(currentLevelIndex);
+    resetGame();
     gameState = 'PLAYING';
-    startTime = Date.now();
-    updateTouchControlsVisibility();
   });
 
-  mainMenuBtn.addEventListener('click', () => {
-    playButtonClick();
-    gameState = 'START';
-    updateTouchControlsVisibility();
-    gameOverOverlay.classList.remove('active');
-    gameOverOverlay.classList.add('hidden');
-    startOverlay.classList.remove('hidden');
-    startOverlay.classList.add('active');
-  });
-
-  victoryPlayAgainBtn.addEventListener('click', () => {
-    playButtonClick();
-    victoryOverlay.classList.remove('active');
-    victoryOverlay.classList.add('hidden');
-    startGame();
-  });
-
-  victoryMainMenuBtn.addEventListener('click', () => {
-    playButtonClick();
-    gameState = 'START';
-    updateTouchControlsVisibility();
-    victoryOverlay.classList.remove('active');
-    victoryOverlay.classList.add('hidden');
-    startOverlay.classList.remove('hidden');
-    startOverlay.classList.add('active');
-  });
-
-  // Load Highscore and initialize initial game state on start
+  // Load Highscore and initialize game ticker on load
   highScoreEl.textContent = String(highScore).padStart(4, '0');
   resetGame();
+  startGameTimer();
 
   // Start Animation Loop
   animationFrameId = requestAnimationFrame(gameLoop);

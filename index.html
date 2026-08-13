@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEON SNAKE // Cyberpunk Arcade Game</title>
+  <title>NEON SNAKE // Classic Cyberpunk Arcade</title>
   <meta name="description" content="A modern, high-aesthetic neon cyberpunk Snake Game featuring dynamic glowing graphics, Web Audio synthesized sounds, particle effects, and touch support." />
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=2.0" />
+  <link rel="stylesheet" href="style.css?v=8.0" />
 </head>
 <body>
   <div class="background-glow"></div>
@@ -24,10 +24,6 @@
       </div>
 
       <div class="score-board">
-        <div class="score-box">
-          <span class="score-label">LEVEL</span>
-          <span id="levelDisplay" class="score-value level-text">1/10</span>
-        </div>
         <div class="score-box">
           <span class="score-label">SCORE</span>
           <span id="currentScore" class="score-value">0000</span>
@@ -43,6 +39,9 @@
       </div>
 
       <div class="hud-controls">
+        <button id="settingsBtn" class="icon-btn" title="Settings" aria-label="Settings">
+          <span>⚙️</span>
+        </button>
         <button id="soundToggleBtn" class="icon-btn" title="Toggle Sound (M)" aria-label="Toggle Sound">
           <span id="soundIcon">🔊</span>
         </button>
@@ -57,32 +56,14 @@
       <div class="canvas-card">
         <canvas id="gameCanvas" width="600" height="600"></canvas>
 
-        <!-- LEVEL UP BANNER OVERLAY -->
-        <div id="levelUpOverlay" class="level-up-banner hidden">
-          <div class="banner-content">
-            <span class="banner-badge">LEVEL COMPLETE!</span>
-            <h2 id="levelUpText" class="banner-title">LEVEL 2</h2>
-            <p id="levelUpTargetText" class="banner-sub">NEXT TARGET: 250 PTS</p>
-          </div>
-        </div>
-
-        <!-- START OVERLAY -->
-        <div id="startOverlay" class="overlay active">
+        <!-- SETTINGS OVERLAY -->
+        <div id="startOverlay" class="overlay hidden">
           <div class="overlay-card">
-            <div class="overlay-badge">CYBERPUNK ARCADE</div>
-            <h2 class="overlay-title">READY TO PLAY?</h2>
-            <p class="overlay-subtitle">Complete 10 levels or play custom endless mode!</p>
+            <div class="overlay-badge">GAME SETTINGS</div>
+            <h2 class="overlay-title">OPTIONS</h2>
 
             <div class="settings-group">
-              <label class="setting-label">GAME MODE</label>
-              <div class="game-mode-selector">
-                <button class="gmode-btn active" data-gmode="campaign">CAMPAIGN (10 LEVELS)</button>
-                <button class="gmode-btn" data-gmode="endless">ENDLESS</button>
-              </div>
-            </div>
-
-            <div class="settings-group">
-              <label class="setting-label">DIFFICULTY LEVEL (SPEED)</label>
+              <label class="setting-label">DIFFICULTY (SPEED)</label>
               <div class="difficulty-selector">
                 <button class="diff-btn" data-speed="260">EASY</button>
                 <button class="diff-btn active" data-speed="180">MEDIUM</button>
@@ -91,8 +72,8 @@
               </div>
             </div>
 
-            <div class="settings-group endless-only hidden">
-              <label class="setting-label">OBSTACLES (ENDLESS ONLY)</label>
+            <div class="settings-group">
+              <label class="setting-label">OBSTACLES</label>
               <div class="obstacle-selector">
                 <button class="obs-btn active" data-obs="off">NONE</button>
                 <button class="obs-btn" data-obs="few">FEW (4)</button>
@@ -109,12 +90,8 @@
             </div>
 
             <button id="startBtn" class="primary-btn glow-btn">
-              START GAME <span class="btn-arrow">▶</span>
+              RESUME GAME ▶
             </button>
-
-            <div class="controls-hint">
-              <span>⌨️ Controls: <strong>WASD</strong> or <strong>Arrow Keys</strong> | <strong>Space</strong> Pause</span>
-            </div>
           </div>
         </div>
 
@@ -157,45 +134,8 @@
 
             <div class="overlay-actions">
               <button id="playAgainBtn" class="primary-btn glow-btn">
-                <span id="playAgainBtnText">RETRY LEVEL</span> <span class="btn-arrow">↺</span>
-              </button>
-              <button id="mainMenuBtn" class="secondary-btn">MAIN MENU</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- VICTORY OVERLAY (10 LEVELS COMPLETED) -->
-        <div id="victoryOverlay" class="overlay hidden">
-          <div class="overlay-card victory-card">
-            <div class="victory-trophy">🏆</div>
-            <h2 class="overlay-title victory-title">YOU WIN!</h2>
-            <div class="overlay-badge gold-badge">NEON SNAKE CHAMPION</div>
-            <p class="overlay-subtitle">Congratulations! You completed all 10 Levels of the Cyberpunk Campaign!</p>
-
-            <div class="final-stats">
-              <div class="stat-item">
-                <span class="stat-name">TOTAL SCORE</span>
-                <span id="victoryScore" class="stat-val gold-val">0</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-name">FOOD EATEN</span>
-                <span id="victoryFood" class="stat-val gold-val">0</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-name">MAX COMBO</span>
-                <span id="victoryCombo" class="stat-val gold-val">x1</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-name">TOTAL TIME</span>
-                <span id="victoryTime" class="stat-val gold-val">0s</span>
-              </div>
-            </div>
-
-            <div class="overlay-actions">
-              <button id="victoryPlayAgainBtn" class="primary-btn glow-gold-btn">
                 PLAY AGAIN <span class="btn-arrow">↺</span>
               </button>
-              <button id="victoryMainMenuBtn" class="secondary-btn">MAIN MENU</button>
             </div>
           </div>
         </div>
@@ -217,6 +157,6 @@
   </div>
 
   <!-- JavaScript -->
-  <script src="game.js?v=2.0"></script>
+  <script src="game.js?v=8.0"></script>
 </body>
 </html>
