@@ -314,11 +314,15 @@ body {
   color: var(--text-muted);
 }
 
-.difficulty-selector, .mode-selector, .obstacle-selector {
+.difficulty-selector, .mode-selector, .obstacle-selector, .game-mode-selector {
   width: 100%;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
+}
+
+.game-mode-selector {
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .obstacle-selector {
@@ -329,7 +333,7 @@ body {
   grid-template-columns: repeat(2, 1fr);
 }
 
-.diff-btn, .mode-btn, .obs-btn {
+.diff-btn, .mode-btn, .obs-btn, .gmode-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--text-muted);
@@ -342,17 +346,125 @@ body {
   transition: all 0.2s ease;
 }
 
-.diff-btn:hover, .mode-btn:hover, .obs-btn:hover {
+.diff-btn:hover, .mode-btn:hover, .obs-btn:hover, .gmode-btn:hover {
   background: rgba(0, 242, 254, 0.12);
   color: #fff;
   border-color: rgba(0, 242, 254, 0.4);
 }
 
-.diff-btn.active, .mode-btn.active, .obs-btn.active {
+.diff-btn.active, .mode-btn.active, .obs-btn.active, .gmode-btn.active {
   background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(79, 172, 254, 0.25));
   border-color: var(--primary-cyan);
   color: var(--primary-cyan);
   box-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
+}
+
+.gmode-btn.active {
+  background: linear-gradient(135deg, rgba(255, 230, 0, 0.25), rgba(0, 255, 135, 0.25));
+  border-color: var(--neon-yellow);
+  color: var(--neon-yellow);
+  box-shadow: 0 0 14px rgba(255, 230, 0, 0.4);
+}
+
+.level-text {
+  color: var(--neon-yellow);
+  text-shadow: 0 0 12px var(--neon-yellow);
+}
+
+/* Level Up Banner Overlay */
+.level-up-banner {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(0, 242, 254, 0), rgba(0, 242, 254, 0.95), rgba(0, 255, 135, 0.95), rgba(0, 242, 254, 0));
+  padding: 1.25rem;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 35px rgba(0, 242, 254, 0.8);
+  animation: levelUpPop 0.4s ease-out;
+  pointer-events: none;
+}
+
+@keyframes levelUpPop {
+  0% { transform: translateY(-50%) scale(0.7); opacity: 0; }
+  100% { transform: translateY(-50%) scale(1); opacity: 1; }
+}
+
+.banner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.banner-badge {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #070a13;
+  background: #fff;
+  padding: 0.2rem 0.75rem;
+  border-radius: 50px;
+}
+
+.banner-title {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #070a13;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.banner-sub {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #070a13;
+}
+
+/* Victory Overlay Styling */
+.victory-card {
+  border: 2px solid var(--neon-yellow);
+  box-shadow: 0 0 45px rgba(255, 230, 0, 0.4);
+}
+
+.victory-trophy {
+  font-size: 3.5rem;
+  filter: drop-shadow(0 0 15px var(--neon-yellow));
+  animation: bounceTrophy 1s infinite alternate ease-in-out;
+}
+
+@keyframes bounceTrophy {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-8px) scale(1.1); }
+}
+
+.victory-title {
+  color: var(--neon-yellow);
+  text-shadow: 0 0 25px var(--neon-yellow);
+}
+
+.gold-badge {
+  color: #070a13;
+  background: var(--neon-yellow);
+  border: 1px solid var(--neon-yellow);
+  font-weight: 800;
+  box-shadow: 0 0 15px var(--neon-yellow);
+}
+
+.gold-val {
+  color: var(--neon-yellow);
+}
+
+.glow-gold-btn {
+  background: linear-gradient(135deg, var(--neon-yellow), var(--neon-green));
+  box-shadow: 0 0 25px rgba(255, 230, 0, 0.6);
 }
 
 .obs-btn.active {

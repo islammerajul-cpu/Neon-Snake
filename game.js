@@ -12,6 +12,7 @@
   // --- HUD Elements ---
   const currentScoreEl = document.getElementById('currentScore');
   const highScoreEl = document.getElementById('highScore');
+  const levelDisplayEl = document.getElementById('levelDisplay');
   const comboBoxEl = document.getElementById('comboBox');
   const comboValueEl = document.getElementById('comboValue');
   const soundToggleBtn = document.getElementById('soundToggleBtn');
@@ -22,6 +23,17 @@
   const startOverlay = document.getElementById('startOverlay');
   const pauseOverlay = document.getElementById('pauseOverlay');
   const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const levelUpOverlay = document.getElementById('levelUpOverlay');
+  const levelUpTextEl = document.getElementById('levelUpText');
+  const levelUpTargetTextEl = document.getElementById('levelUpTargetText');
+
+  const victoryOverlay = document.getElementById('victoryOverlay');
+  const victoryScoreEl = document.getElementById('victoryScore');
+  const victoryFoodEl = document.getElementById('victoryFood');
+  const victoryComboEl = document.getElementById('victoryCombo');
+  const victoryTimeEl = document.getElementById('victoryTime');
+  const victoryPlayAgainBtn = document.getElementById('victoryPlayAgainBtn');
+  const victoryMainMenuBtn = document.getElementById('victoryMainMenuBtn');
 
   const startBtn = document.getElementById('startBtn');
   const resumeBtn = document.getElementById('resumeBtn');
@@ -50,17 +62,36 @@
   const diffBtns = document.querySelectorAll('.diff-btn');
   const modeBtns = document.querySelectorAll('.mode-btn');
   const obsBtns = document.querySelectorAll('.obs-btn');
+  const gmodeBtns = document.querySelectorAll('.gmode-btn');
+  const endlessOnlyGroups = document.querySelectorAll('.endless-only');
+
+  // --- Campaign Level Configurations (10 Levels) ---
+  const CAMPAIGN_LEVELS = [
+    { level: 1, target: 100, obsCount: 0, name: 'OPEN ARENA' },
+    { level: 2, target: 250, obsCount: 4, name: 'CORNER HAZARDS' },
+    { level: 3, target: 450, obsCount: 8, name: 'CENTER BOX' },
+    { level: 4, target: 700, obsCount: 12, name: 'CORRIDOR ALLEY' },
+    { level: 5, target: 1000, obsCount: 16, name: 'OUTER RING' },
+    { level: 6, target: 1350, obsCount: 20, name: 'PLUS CROSS' },
+    { level: 7, target: 1750, obsCount: 24, name: 'DOUBLE MAZE' },
+    { level: 8, target: 2200, obsCount: 28, name: 'SPIRAL DANGER' },
+    { level: 9, target: 2700, obsCount: 32, name: 'CHAOS MATRIX' },
+    { level: 10, target: 3300, obsCount: 36, name: 'BOSS ARENA' }
+  ];
 
   // --- Game Grid Configuration ---
   const GRID_COUNT = 24; // 24x24 grid
   const CELL_SIZE = canvas.width / GRID_COUNT; // 25px per cell
 
   // --- Game State Variables ---
-  let gameState = 'START'; // 'START', 'PLAYING', 'PAUSED', 'GAMEOVER'
+  let gameState = 'START'; // 'START', 'PLAYING', 'PAUSED', 'GAMEOVER', 'VICTORY'
+  let gameMode = 'campaign'; // 'campaign' or 'endless'
+  let currentLevelIndex = 0;
   let speedInterval = 180; // Ms per tick (Medium default, halved speed)
   let wallMode = 'portal'; // 'portal' (wrap around) default as requested
   let obstacleCount = 0; // 0 for NONE, 4 for FEW, 8 for MANY
   let obstacles = [];
+  let fireworks = [];
   let soundEnabled = localStorage.getItem('neon_snake_sound') !== 'false';
 
   let snake = [];
@@ -180,6 +211,25 @@
     playTone(400, 'sine', 0.04, 0.05, 0.001);
   }
 
+  function playLevelUpSound() {
+    if (!soundEnabled || !audioCtx) return;
+    initAudio();
+    playTone(440, 'triangle', 0.1, 0.15, 0.01);
+    setTimeout(() => playTone(659.25, 'triangle', 0.1, 0.15, 0.01), 70);
+    setTimeout(() => playTone(880, 'triangle', 0.22, 0.2, 0.01), 140);
+  }
+
+  function playVictorySound() {
+    if (!soundEnabled || !audioCtx) return;
+    initAudio();
+    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+    notes.forEach((freq, idx) => {
+      setTimeout(() => {
+        playTone(freq, 'sine', 0.25, 0.2, 0.01);
+      }, idx * 90);
+    });
+  }
+
   // --- Sound HUD Updates ---
   function updateSoundIcon() {
     soundIconEl.textContent = soundEnabled ? '🔊' : '🔇';
@@ -195,6 +245,16 @@
   });
 
   // --- Settings Selectors ---
+  gmodeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      gmodeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      gameMode = btn.dataset.gmode;
+      endlessOnlyGroups.forEach(el => el.classList.toggle('hidden', gameMode !== 'endless'));
+      playButtonClick();
+    });
+  });
+
   diffBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       diffBtns.forEach(b => b.classList.remove('active'));
@@ -261,19 +321,139 @@
     }
   }
 
-  function drawParticles() {
+  // --- Fireworks Particle Engine ---
+  function spawnFireworks() {
+    const colors = ['#00f2fe', '#00ff87', '#ff007f', '#ffe600', '#a855f7', '#ffffff'];
+    for (let i = 0; i < 40; i++) {
+      const fx = Math.random() * canvas.width;
+      const fy = Math.random() * canvas.height * 0.6;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for (let j = 0; j < 10; j++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5 + 2;
+        fireworks.push({
+          x: fx,
+          y: fy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: color,
+          size: Math.random() * 4 + 2,
+          alpha: 1,
+          life: 1,
+          decay: Math.random() * 0.025 + 0.015
+        });
+      }
+    }
+  }
+
+  function updateFireworks() {
+    for (let i = fireworks.length - 1; i >= 0; i--) {
+      const p = fireworks[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.04;
+      p.life -= p.decay;
+      p.alpha = Math.max(0, p.life);
+      if (p.life <= 0) fireworks.splice(i, 1);
+    }
+  }
+
+  function drawFireworks() {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    particles.forEach(p => {
+    fireworks.forEach(p => {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fillStyle = p.color;
       ctx.globalAlpha = p.alpha;
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 12;
       ctx.shadowColor = p.color;
       ctx.fill();
     });
     ctx.restore();
+  }
+
+  // --- Campaign Level Obstacle Generator ---
+  function generateLevelObstacles(levelIdx) {
+    obstacles = [];
+    const center = Math.floor(GRID_COUNT / 2);
+
+    function addBlock(x, y) {
+      if (Math.abs(x - center) <= 2 && Math.abs(y - center) <= 2) return;
+      if (x < 0 || x >= GRID_COUNT || y < 0 || y >= GRID_COUNT) return;
+      if (!obstacles.some(o => o.x === x && o.y === y)) {
+        obstacles.push({ x, y });
+      }
+    }
+
+    if (gameMode !== 'campaign') {
+      if (obstacleCount > 0) {
+        let placed = 0;
+        let attempts = 0;
+        while (placed < obstacleCount && attempts < 250) {
+          attempts++;
+          const ox = Math.floor(Math.random() * GRID_COUNT);
+          const oy = Math.floor(Math.random() * GRID_COUNT);
+          if (Math.abs(ox - center) <= 2 && Math.abs(oy - center) <= 2) continue;
+          if (obstacles.some(o => o.x === ox && o.y === oy)) continue;
+          obstacles.push({ x: ox, y: oy });
+          placed++;
+        }
+      }
+      return;
+    }
+
+    const lvl = levelIdx + 1;
+    if (lvl === 1) {
+      // 0 obstacles
+    } else if (lvl === 2) {
+      addBlock(4, 4); addBlock(19, 4);
+      addBlock(4, 19); addBlock(19, 19);
+    } else if (lvl === 3) {
+      addBlock(7, 7); addBlock(16, 7);
+      addBlock(7, 16); addBlock(16, 16);
+      addBlock(7, 11); addBlock(16, 11);
+      addBlock(11, 7); addBlock(11, 16);
+    } else if (lvl === 4) {
+      for (let i = 4; i <= 9; i++) addBlock(i, 6);
+      for (let i = 14; i <= 19; i++) addBlock(i, 17);
+    } else if (lvl === 5) {
+      for (let i = 3; i <= 20; i += 5) {
+        addBlock(i, 3); addBlock(i, 20);
+        addBlock(3, i); addBlock(20, i);
+      }
+    } else if (lvl === 6) {
+      for (let i = 4; i <= 8; i++) {
+        addBlock(i, 11); addBlock(23 - i, 11);
+        addBlock(11, i); addBlock(11, 23 - i);
+      }
+    } else if (lvl === 7) {
+      for (let i = 5; i <= 10; i++) {
+        addBlock(i, 5); addBlock(23 - i, 18);
+      }
+      for (let i = 13; i <= 18; i++) {
+        addBlock(5, i); addBlock(18, 23 - i);
+      }
+    } else if (lvl === 8) {
+      for (let i = 4; i <= 19; i += 3) {
+        addBlock(i, 4); addBlock(i, 19);
+        addBlock(4, i); addBlock(19, i);
+      }
+    } else if (lvl === 9) {
+      for (let x = 4; x <= 19; x += 5) {
+        for (let y = 4; y <= 19; y += 5) {
+          addBlock(x, y); addBlock(x + 1, y);
+        }
+      }
+    } else if (lvl === 10) {
+      for (let i = 3; i <= 20; i += 3) {
+        addBlock(i, 3); addBlock(i, 20);
+        addBlock(3, i); addBlock(20, i);
+      }
+      for (let i = 6; i <= 17; i += 3) {
+        addBlock(i, 6); addBlock(i, 17);
+      }
+    }
   }
 
   // --- Game Engine Functions ---
@@ -292,27 +472,14 @@
     currentCombo = 1;
     maxCombo = 1;
     particles = [];
+    fireworks = [];
     bonusFood.active = false;
 
-    // Generate Obstacles
-    obstacles = [];
-    if (obstacleCount > 0) {
-      let placed = 0;
-      let attempts = 0;
-      while (placed < obstacleCount && attempts < 200) {
-        attempts++;
-        const ox = Math.floor(Math.random() * GRID_COUNT);
-        const oy = Math.floor(Math.random() * GRID_COUNT);
-
-        // Keep 5x5 clear zone around snake spawn center
-        if (Math.abs(ox - center) <= 2 && Math.abs(oy - center) <= 2) continue;
-
-        // Prevent duplicate obstacles
-        if (obstacles.some(o => o.x === ox && o.y === oy)) continue;
-
-        obstacles.push({ x: ox, y: oy });
-        placed++;
-      }
+    if (gameMode === 'campaign') {
+      currentLevelIndex = 0;
+      generateLevelObstacles(0);
+    } else {
+      generateLevelObstacles(-1);
     }
 
     updateScoreDisplay();
@@ -359,6 +526,14 @@
 
   function updateScoreDisplay() {
     currentScoreEl.textContent = String(score).padStart(4, '0');
+
+    if (gameMode === 'campaign') {
+      const currentLevelObj = CAMPAIGN_LEVELS[currentLevelIndex];
+      levelDisplayEl.textContent = `${currentLevelObj.level}/10`;
+    } else {
+      levelDisplayEl.textContent = 'INF';
+    }
+
     if (score > highScore) {
       highScore = score;
       localStorage.setItem('neon_snake_highscore', highScore);
@@ -455,6 +630,56 @@
         bonusFood.active = false;
       }
     }
+
+    // Check Campaign Level Progression
+    if (gameMode === 'campaign' && gameState === 'PLAYING') {
+      const currentTarget = CAMPAIGN_LEVELS[currentLevelIndex].target;
+      if (score >= currentTarget) {
+        if (currentLevelIndex < CAMPAIGN_LEVELS.length - 1) {
+          currentLevelIndex++;
+          triggerLevelUp();
+        } else {
+          triggerVictory();
+        }
+      }
+    }
+  }
+
+  function triggerLevelUp() {
+    playLevelUpSound();
+    const nextLevelObj = CAMPAIGN_LEVELS[currentLevelIndex];
+
+    levelUpTextEl.textContent = `LEVEL ${nextLevelObj.level}`;
+    levelUpTargetTextEl.textContent = `TARGET: ${nextLevelObj.target} PTS (${nextLevelObj.name})`;
+
+    levelUpOverlay.classList.remove('hidden');
+
+    generateLevelObstacles(currentLevelIndex);
+    spawnFood();
+    updateScoreDisplay();
+
+    setTimeout(() => {
+      levelUpOverlay.classList.add('hidden');
+    }, 1800);
+  }
+
+  function triggerVictory() {
+    gameState = 'VICTORY';
+    updateTouchControlsVisibility();
+    playVictorySound();
+    spawnFireworks();
+
+    timeSurvived = Math.floor((Date.now() - startTime) / 1000);
+
+    victoryScoreEl.textContent = score;
+    victoryFoodEl.textContent = foodEaten;
+    victoryComboEl.textContent = `x${maxCombo}`;
+    victoryTimeEl.textContent = `${timeSurvived}s`;
+
+    setTimeout(() => {
+      victoryOverlay.classList.remove('hidden');
+      victoryOverlay.classList.add('active');
+    }, 600);
   }
 
   function triggerGameOver() {
@@ -658,6 +883,12 @@
 
     // Render Particle Explosions
     drawParticles();
+
+    if (gameState === 'VICTORY') {
+      if (Math.random() < 0.25) spawnFireworks();
+      updateFireworks();
+      drawFireworks();
+    }
   }
 
   // --- Main Animation Loop ---
@@ -730,7 +961,7 @@
         break;
       case 'r':
       case 'R':
-        if (gameState === 'PLAYING' || gameState === 'PAUSED' || gameState === 'GAMEOVER') {
+        if (gameState === 'PLAYING' || gameState === 'PAUSED' || gameState === 'GAMEOVER' || gameState === 'VICTORY') {
           startGame();
         }
         break;
@@ -786,6 +1017,8 @@
     pauseOverlay.classList.add('hidden');
     gameOverOverlay.classList.remove('active');
     gameOverOverlay.classList.add('hidden');
+    victoryOverlay.classList.remove('active');
+    victoryOverlay.classList.add('hidden');
   }
 
   function togglePause() {
@@ -833,6 +1066,23 @@
     updateTouchControlsVisibility();
     gameOverOverlay.classList.remove('active');
     gameOverOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+    startOverlay.classList.add('active');
+  });
+
+  victoryPlayAgainBtn.addEventListener('click', () => {
+    playButtonClick();
+    victoryOverlay.classList.remove('active');
+    victoryOverlay.classList.add('hidden');
+    startGame();
+  });
+
+  victoryMainMenuBtn.addEventListener('click', () => {
+    playButtonClick();
+    gameState = 'START';
+    updateTouchControlsVisibility();
+    victoryOverlay.classList.remove('active');
+    victoryOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
     startOverlay.classList.add('active');
   });

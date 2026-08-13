@@ -25,6 +25,10 @@
 
       <div class="score-board">
         <div class="score-box">
+          <span class="score-label">LEVEL</span>
+          <span id="levelDisplay" class="score-value level-text">1/10</span>
+        </div>
+        <div class="score-box">
           <span class="score-label">SCORE</span>
           <span id="currentScore" class="score-value">0000</span>
         </div>
@@ -53,12 +57,29 @@
       <div class="canvas-card">
         <canvas id="gameCanvas" width="600" height="600"></canvas>
 
+        <!-- LEVEL UP BANNER OVERLAY -->
+        <div id="levelUpOverlay" class="level-up-banner hidden">
+          <div class="banner-content">
+            <span class="banner-badge">LEVEL COMPLETE!</span>
+            <h2 id="levelUpText" class="banner-title">LEVEL 2</h2>
+            <p id="levelUpTargetText" class="banner-sub">NEXT TARGET: 250 PTS</p>
+          </div>
+        </div>
+
         <!-- START OVERLAY -->
         <div id="startOverlay" class="overlay active">
           <div class="overlay-card">
             <div class="overlay-badge">CYBERPUNK ARCADE</div>
             <h2 class="overlay-title">READY TO PLAY?</h2>
-            <p class="overlay-subtitle">Guide the neon snake, collect glowing energy spheres & unlock bonus multipliers!</p>
+            <p class="overlay-subtitle">Complete 10 levels or play custom endless mode!</p>
+
+            <div class="settings-group">
+              <label class="setting-label">GAME MODE</label>
+              <div class="game-mode-selector">
+                <button class="gmode-btn active" data-gmode="campaign">CAMPAIGN (10 LEVELS)</button>
+                <button class="gmode-btn" data-gmode="endless">ENDLESS</button>
+              </div>
+            </div>
 
             <div class="settings-group">
               <label class="setting-label">DIFFICULTY LEVEL (SPEED)</label>
@@ -70,8 +91,8 @@
               </div>
             </div>
 
-            <div class="settings-group">
-              <label class="setting-label">OBSTACLES (HAZARDS)</label>
+            <div class="settings-group endless-only hidden">
+              <label class="setting-label">OBSTACLES (ENDLESS ONLY)</label>
               <div class="obstacle-selector">
                 <button class="obs-btn active" data-obs="off">NONE</button>
                 <button class="obs-btn" data-obs="few">FEW (4)</button>
@@ -139,6 +160,42 @@
                 PLAY AGAIN <span class="btn-arrow">↺</span>
               </button>
               <button id="mainMenuBtn" class="secondary-btn">MAIN MENU</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- VICTORY OVERLAY (10 LEVELS COMPLETED) -->
+        <div id="victoryOverlay" class="overlay hidden">
+          <div class="overlay-card victory-card">
+            <div class="victory-trophy">🏆</div>
+            <h2 class="overlay-title victory-title">YOU WIN!</h2>
+            <div class="overlay-badge gold-badge">NEON SNAKE CHAMPION</div>
+            <p class="overlay-subtitle">Congratulations! You completed all 10 Levels of the Cyberpunk Campaign!</p>
+
+            <div class="final-stats">
+              <div class="stat-item">
+                <span class="stat-name">TOTAL SCORE</span>
+                <span id="victoryScore" class="stat-val gold-val">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-name">FOOD EATEN</span>
+                <span id="victoryFood" class="stat-val gold-val">0</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-name">MAX COMBO</span>
+                <span id="victoryCombo" class="stat-val gold-val">x1</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-name">TOTAL TIME</span>
+                <span id="victoryTime" class="stat-val gold-val">0s</span>
+              </div>
+            </div>
+
+            <div class="overlay-actions">
+              <button id="victoryPlayAgainBtn" class="primary-btn glow-gold-btn">
+                PLAY AGAIN <span class="btn-arrow">↺</span>
+              </button>
+              <button id="victoryMainMenuBtn" class="secondary-btn">MAIN MENU</button>
             </div>
           </div>
         </div>
