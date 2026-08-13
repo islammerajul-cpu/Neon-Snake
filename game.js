@@ -29,6 +29,16 @@
   const playAgainBtn = document.getElementById('playAgainBtn');
   const mainMenuBtn = document.getElementById('mainMenuBtn');
 
+  const touchControlsEl = document.querySelector('.touch-controls');
+
+  function updateTouchControlsVisibility() {
+    if (gameState === 'PLAYING') {
+      touchControlsEl.classList.add('active');
+    } else {
+      touchControlsEl.classList.remove('active');
+    }
+  }
+
   // --- Stat Displays ---
   const finalScoreEl = document.getElementById('finalScore');
   const finalFoodEl = document.getElementById('finalFood');
@@ -449,6 +459,7 @@
 
   function triggerGameOver() {
     gameState = 'GAMEOVER';
+    updateTouchControlsVisibility();
     playGameOverSound();
     createExplosion(snake[0].x, snake[0].y, '#ff3366', 35);
 
@@ -767,6 +778,7 @@
     resetGame();
     gameState = 'PLAYING';
     startTime = Date.now();
+    updateTouchControlsVisibility();
 
     startOverlay.classList.remove('active');
     startOverlay.classList.add('hidden');
@@ -779,10 +791,12 @@
   function togglePause() {
     if (gameState === 'PLAYING') {
       gameState = 'PAUSED';
+      updateTouchControlsVisibility();
       pauseOverlay.classList.remove('hidden');
       pauseOverlay.classList.add('active');
     } else if (gameState === 'PAUSED') {
       gameState = 'PLAYING';
+      updateTouchControlsVisibility();
       pauseOverlay.classList.remove('active');
       pauseOverlay.classList.add('hidden');
     }
@@ -816,6 +830,7 @@
   mainMenuBtn.addEventListener('click', () => {
     playButtonClick();
     gameState = 'START';
+    updateTouchControlsVisibility();
     gameOverOverlay.classList.remove('active');
     gameOverOverlay.classList.add('hidden');
     startOverlay.classList.remove('hidden');
