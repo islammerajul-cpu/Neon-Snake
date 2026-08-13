@@ -9,6 +9,22 @@
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
+  // --- Polyfill for roundRect compatibility on Mobile Browsers ---
+  function drawRoundRect(ctx, x, y, w, h, r) {
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, w, h, r);
+    } else {
+      if (w < 2 * r) r = w / 2;
+      if (h < 2 * r) r = h / 2;
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+  }
+
   // --- HUD Elements ---
   const currentScoreEl = document.getElementById('currentScore');
   const highScoreEl = document.getElementById('highScore');
@@ -758,7 +774,7 @@
         ctx.lineWidth = 1.5;
 
         ctx.beginPath();
-        ctx.roundRect(ox + 2, oy + 2, CELL_SIZE - 4, CELL_SIZE - 4, 4);
+        drawRoundRect(ctx, ox + 2, oy + 2, CELL_SIZE - 4, CELL_SIZE - 4, 4);
         ctx.fill();
         ctx.stroke();
 
@@ -844,7 +860,7 @@
           ctx.fillStyle = '#00f2fe';
 
           ctx.beginPath();
-          ctx.roundRect(sx + 1, sy + 1, CELL_SIZE - 2, CELL_SIZE - 2, 8);
+          drawRoundRect(ctx, sx + 1, sy + 1, CELL_SIZE - 2, CELL_SIZE - 2, 8);
           ctx.fill();
 
           // Draw Eyes
@@ -886,7 +902,8 @@
 
           const shrink = Math.min(i * 0.4, 4);
           ctx.beginPath();
-          ctx.roundRect(
+          drawRoundRect(
+            ctx,
             sx + 1 + shrink / 2,
             sy + 1 + shrink / 2,
             CELL_SIZE - 2 - shrink,
