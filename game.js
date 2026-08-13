@@ -9,20 +9,17 @@
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
-  // --- Polyfill for roundRect compatibility on Mobile Browsers ---
+  // --- Universal rounded rectangle drawing ---
   function drawRoundRect(ctx, x, y, w, h, r) {
-    if (typeof ctx.roundRect === 'function') {
-      ctx.roundRect(x, y, w, h, r);
-    } else {
-      if (w < 2 * r) r = w / 2;
-      if (h < 2 * r) r = h / 2;
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
-      ctx.closePath();
-    }
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   // --- HUD Elements ---
@@ -1127,8 +1124,9 @@
     startOverlay.classList.add('active');
   });
 
-  // Load Highscore display on start
+  // Load Highscore and initialize initial game state on start
   highScoreEl.textContent = String(highScore).padStart(4, '0');
+  resetGame();
 
   // Start Animation Loop
   animationFrameId = requestAnimationFrame(gameLoop);
